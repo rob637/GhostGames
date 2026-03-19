@@ -14,6 +14,8 @@ import { getRandomPrompts } from '../utils/drawPrompts'
 import { getRandomStarter } from '../utils/storyStarters'
 import { getRandomTriviaQuestions } from '../utils/triviaQuestions'
 import { getRandomMindMeldPrompts } from '../utils/mindMeldPrompts'
+import { getRandomMostLikelyPrompts } from '../utils/mostLikelyPrompts'
+import { getRandomBluffQuestions } from '../utils/bluffQuestions'
 
 // Generate a short game ID
 function generateGameId() {
@@ -638,6 +640,16 @@ export async function createPartyGame(gameType) {
     gameData.currentRound = 0
     gameData.rounds = []
     gameData.totalRounds = 5
+  } else if (gameType === 'most-likely') {
+    gameData.prompts = getRandomMostLikelyPrompts(10)
+    gameData.currentRound = 0
+    gameData.rounds = []
+    gameData.totalRounds = 10
+  } else if (gameType === 'bluff-battle') {
+    gameData.prompts = getRandomBluffQuestions(8)
+    gameData.currentRound = 0
+    gameData.rounds = []
+    gameData.totalRounds = 8
   }
   
   await setDoc(doc(db, 'games', gameId), gameData)
@@ -769,6 +781,222 @@ export async function advanceMindMeldRound(gameId, roundIndex) {
   if (!game) throw new Error('Game not found')
   
   const totalRounds = game.totalRounds || 5
+  const nextRound = roundIndex + 1
+  
+  const updateData = {
+    updatedAt: serverTimestamp(),
+  }
+  
+  if (nextRound >= totalRounds) {
+    updateData.status = 'finished'
+  } else {
+    updateData.currentRound = nextRound
+  }
+  
+  await updateDoc(gameRef, updateData)
+}
+
+// Most Likely To: Submit a vote
+export async function submitMostLikelyVote(gameId, roundIndex, votedForPlayerId) {
+  const gameRef = doc(db, 'games', gameId)
+  const gameSnap = await getDoc(gameRef)
+  const game = gameSnap.data()
+  const playerId = getOrCreatePlayerId()
+  
+  if (!game) throw new Error('Game not found')
+  
+  const rounds = [...(game.rounds || [])]
+  
+  // Ensure rounds array is long enough
+  while (rounds.length <= roundIndex) {
+    rounds.push({ votes: {} })
+  }
+  
+  // Add this player's vote
+  rounds[roundIndex] = {
+    ...rounds[roundIndex],
+    votes: {
+      ...(rounds[roundIndex].votes || {}),
+      [playerId]: {
+        votedFor: votedForPlayerId,
+        submittedAt: Date.now(),
+      }
+    }
+  }
+  
+  const updateData = {
+    rounds,
+    updatedAt: serverTimestamp(),
+  }
+  
+  // Check if all players have voted
+  const playerCount = game.partyPlayers?.length || 0
+  const voteCount = Object.keys(rounds[roundIndex].votes).length
+  
+  if (voteCount >= playerCount) {
+    rounds[roundIndex].complete = true
+    rounds[roundIndex].completedAt = Date.now()
+    updateData.rounds = rounds
+  }
+  
+  await updateDoc(gameRef, updateData)
+}
+
+// Most Likely To: Advance to next round with winner info
+export async function advanceMostLikelyRound(gameId, roundIndex, roundWinner) {
+  const gameRef = doc(db, 'games', gameId)
+  const gameSnap = await getDoc(gameRef)
+  const game = gameSnap.data()
+  
+  if (!game) throw new Error('Game not found')
+  
+  const rounds = [...(game.rounds || [])]
+  
+  // Store winner info in the round
+  if (roundWinner && rounds[roundIndex]) {
+    rounds[roundIndex].winnerIds = roundWinner.winners || []
+    rounds[roundIndex].winnerPoints = 100 // Points per win
+  }
+  
+  const totalRounds = game.totalRounds || 10
+  const nextRound = roundIndex + 1
+  
+  const updateData = {
+    rounds,
+    updatedAt: serverTimestamp(),
+  }
+  
+  if (nextRound >= totalRounds) {
+    updateData.status = 'finished'
+  } else {
+    updateData.currentRound = nextRound
+  }
+  
+  await updateDoc(gameRef, updateData)
+}
+
+// Bluff Battle: Submit a fake answer
+export async function submitBluffAnswer(gameId, roundIndex, answer) {
+  const gameRef = doc(db, 'games', gameId)
+  const gameSnap = await getDoc(gameRef)
+  const game = gameSnap.data()
+  const playerId = getOrCreatePlayerId()
+  
+  if (!game) throw new Error('Game not found')
+  
+  const rounds = [...(game.rounds || [])]
+  
+  // Ensure rounds array is long enough
+  while (rounds.length <= roundIndex) {
+    rounds.push({ answers: {}, votes: {} })
+  }
+  
+  // Add this player's fake answer
+  rounds[roundIndex] = {
+    ...rounds[roundIndex],
+    answers: {
+      ...(rounds[roundIndex].answers || {}),
+      [playerId]: {
+        answer: answer,
+        submittedAt: Date.now(),
+      }
+    }
+  }
+  
+  const updateData = {
+    rounds,
+    updatedAt: serverTimestamp(),
+  }
+  
+  // Check if all players have submitted answers
+  const playerCount = game.partyPlayers?.length || 0
+  const answerCount = Object.keys(rounds[roundIndex].answers).length
+  
+  if (answerCount >= playerCount) {
+    rounds[roundIndex].answersComplete = true
+    updateData.rounds = rounds
+  }
+  
+  await updateDoc(gameRef, updateData)
+}
+
+// Bluff Battle: Submit a vote for which answer is real
+export async function submitBluffVote(gameId, roundIndex, votedForId) {
+  const gameRef = doc(db, 'games', gameId)
+  const gameSnap = await getDoc(gameRef)
+  const game = gameSnap.data()
+  const playerId = getOrCreatePlayerId()
+  
+  if (!game) throw new Error('Game not found')
+  
+  const rounds = [...(game.rounds || [])]
+  
+  // Add this player's vote
+  rounds[roundIndex] = {
+    ...rounds[roundIndex],
+    votes: {
+      ...(rounds[roundIndex].votes || {}),
+      [playerId]: {
+        votedFor: votedForId,
+        submittedAt: Date.now(),
+      }
+    }
+  }
+  
+  const updateData = {
+    rounds,
+    updatedAt: serverTimestamp(),
+  }
+  
+  // Check if all players have voted
+  const playerCount = game.partyPlayers?.length || 0
+  const voteCount = Object.keys(rounds[roundIndex].votes).length
+  
+  if (voteCount >= playerCount) {
+    rounds[roundIndex].complete = true
+    rounds[roundIndex].completedAt = Date.now()
+    
+    // Calculate scores for this round
+    const answers = rounds[roundIndex].answers || {}
+    const votes = rounds[roundIndex].votes || {}
+    const roundScores = {}
+    const correctGuessers = []
+    const fooledBy = {}
+    
+    game.partyPlayers.forEach(p => { roundScores[p.id] = 0 })
+    
+    Object.entries(votes).forEach(([voterId, voteData]) => {
+      const votedFor = voteData.votedFor
+      
+      if (votedFor === 'real') {
+        // Voter guessed correctly
+        roundScores[voterId] = (roundScores[voterId] || 0) + 500
+        correctGuessers.push(voterId)
+      } else if (answers[votedFor] && votedFor !== voterId) {
+        // Voter was fooled by another player's fake answer
+        roundScores[votedFor] = (roundScores[votedFor] || 0) + 250
+        fooledBy[votedFor] = (fooledBy[votedFor] || 0) + 1
+      }
+    })
+    
+    rounds[roundIndex].roundScores = roundScores
+    rounds[roundIndex].correctGuessers = correctGuessers
+    rounds[roundIndex].fooledBy = fooledBy
+    updateData.rounds = rounds
+  }
+  
+  await updateDoc(gameRef, updateData)
+}
+
+// Bluff Battle: Advance to next round
+export async function advanceBluffRound(gameId, roundIndex) {
+  const gameRef = doc(db, 'games', gameId)
+  const gameSnap = await getDoc(gameRef)
+  const game = gameSnap.data()
+  
+  if (!game) throw new Error('Game not found')
+  
+  const totalRounds = game.totalRounds || 8
   const nextRound = roundIndex + 1
   
   const updateData = {

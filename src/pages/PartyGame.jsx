@@ -5,6 +5,10 @@ import { getOrCreatePlayerId, joinPartyGame, getPartyPlayer } from '../services/
 import PartyLobby from '../components/PartyLobby'
 import MindMeld from '../components/games/MindMeld'
 import MindMeldResults from '../components/games/MindMeldResults'
+import MostLikely from '../components/games/MostLikely'
+import MostLikelyResults from '../components/games/MostLikelyResults'
+import BluffBattle from '../components/games/BluffBattle'
+import BluffBattleResults from '../components/games/BluffBattleResults'
 import Loading from '../components/Loading'
 
 export default function PartyGame() {
@@ -112,6 +116,24 @@ export default function PartyGame() {
         />
       )
     }
+    if (game.gameType === 'most-likely') {
+      return (
+        <MostLikely 
+          game={game} 
+          gameId={gameId} 
+          currentPlayer={currentPlayer}
+        />
+      )
+    }
+    if (game.gameType === 'bluff-battle') {
+      return (
+        <BluffBattle 
+          game={game} 
+          gameId={gameId} 
+          currentPlayer={currentPlayer}
+        />
+      )
+    }
   }
   
   // Finished game - show results
@@ -119,6 +141,24 @@ export default function PartyGame() {
     if (game.gameType === 'mind-meld') {
       return (
         <MindMeldResults 
+          game={game} 
+          gameId={gameId} 
+          currentPlayer={currentPlayer}
+        />
+      )
+    }
+    if (game.gameType === 'most-likely') {
+      return (
+        <MostLikelyResults 
+          game={game} 
+          gameId={gameId} 
+          currentPlayer={currentPlayer}
+        />
+      )
+    }
+    if (game.gameType === 'bluff-battle') {
+      return (
+        <BluffBattleResults 
           game={game} 
           gameId={gameId} 
           currentPlayer={currentPlayer}
