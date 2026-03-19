@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import { submitBluffAnswer, submitBluffVote, advanceBluffRound } from '../../services/gameService'
+import { playTurnSound, playVictorySound, playMatchSound } from '../../utils/sounds'
+import Confetti from '../Confetti'
 
 export default function BluffBattle({ game, gameId, currentPlayer }) {
   const [fakeAnswer, setFakeAnswer] = useState('')
@@ -168,9 +170,35 @@ export default function BluffBattle({ game, gameId, currentPlayer }) {
     
     return scores
   }
+
+  // Check if current player fooled others this round (successful bluff)
+  const fooledSomeone = phase === 'reveal' && roundData?.votes && 
+    Object.values(roundData.votes).some(v => v.votedFor === `fake_${currentPlayer?.id}`)
+  
+  // Check if current player found the real answer
+  const foundReal = phase === 'reveal' && roundData?.votes?.[currentPlayer?.id]?.votedFor === 'real'
+
+  // Play sounds on phase changes
+  useEffect(() => {
+    if (fooledSomeone) {
+      playVictorySound()
+    } else if (foundReal) {
+      playMatchSound()
+    }
+  }, [fooledSomeone, foundReal])
+
+  // Play sound when voting starts
+  useEffect(() => {
+    if (phase === 'voting' && !hasVoted) {
+      playTurnSound()
+    }
+  }, [phase, hasVoted])
   
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
+      {/* Confetti for successful bluff */}
+      <Confetti show={fooledSomeone} />
+      
       {/* Header */}
       <div className="text-center mb-4">
         <h1 className="text-2xl font-bold mb-1 flex items-center justify-center gap-2">

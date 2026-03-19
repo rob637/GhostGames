@@ -1,33 +1,5 @@
 import { useMemo } from 'react'
-
-// Pre-generate confetti pieces
-const CONFETTI_PIECES = Array.from({ length: 30 }).map((_, i) => ({
-  id: i,
-  left: `${(i * 3.33) % 100}%`,
-  delay: `${(i * 0.067) % 2}s`,
-  color: ['#f97316', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#eab308'][i % 6],
-  isCircle: i % 2 === 0,
-}))
-
-function Confetti() {
-  return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden">
-      {CONFETTI_PIECES.map(p => (
-        <div
-          key={p.id}
-          className="absolute w-3 h-3 animated-confetti"
-          style={{
-            left: p.left,
-            top: '-10px',
-            backgroundColor: p.color,
-            animationDelay: p.delay,
-            borderRadius: p.isCircle ? '50%' : '0',
-          }}
-        />
-      ))}
-    </div>
-  )
-}
+import Confetti from '../Confetti'
 
 export default function RankedChoiceResults({ game, currentPlayer }) {
   const players = useMemo(() => game?.partyPlayers || [], [game?.partyPlayers])
@@ -99,7 +71,7 @@ export default function RankedChoiceResults({ game, currentPlayer }) {
   
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      {isWinner && <Confetti />}
+      <Confetti show={isWinner} />
       
       <div className="w-full max-w-md">
         {/* Header */}

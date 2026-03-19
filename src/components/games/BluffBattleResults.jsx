@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
+import Confetti from '../Confetti'
 
-export default function BluffBattleResults({ game, gameId, currentPlayer }) {
+export default function BluffBattleResults({ game, currentPlayer }) {
   const players = game?.partyPlayers || []
   
   // Calculate final scores
@@ -58,23 +59,7 @@ export default function BluffBattleResults({ game, gameId, currentPlayer }) {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       {/* Celebration for winner */}
-      {isWinner && (
-        <div className="fixed inset-0 pointer-events-none overflow-hidden">
-          {Array.from({ length: 30 }).map((_, i) => (
-            <div
-              key={i}
-              className="absolute w-3 h-3 animate-confetti"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: '-10px',
-                backgroundColor: ['#f97316', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#eab308'][Math.floor(Math.random() * 6)],
-                animationDelay: `${Math.random() * 2}s`,
-                borderRadius: Math.random() > 0.5 ? '50%' : '0',
-              }}
-            />
-          ))}
-        </div>
-      )}
+      <Confetti show={isWinner} />
       
       <div className="w-full max-w-md">
         {/* Header */}

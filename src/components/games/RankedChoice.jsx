@@ -1,34 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { submitRanking, advanceRankingRound } from '../../services/gameService'
-
-// Pre-generate confetti pieces
-const CONFETTI_PIECES = Array.from({ length: 25 }).map((_, i) => ({
-  id: i,
-  left: `${(i * 4) % 100}%`,
-  delay: `${(i * 0.04) % 1}s`,
-  color: ['#f97316', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#eab308'][i % 6],
-  isCircle: i % 2 === 0,
-}))
-
-function Confetti() {
-  return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden">
-      {CONFETTI_PIECES.map(p => (
-        <div
-          key={p.id}
-          className="absolute w-3 h-3 animated-confetti"
-          style={{
-            left: p.left,
-            top: '-10px',
-            backgroundColor: p.color,
-            animationDelay: p.delay,
-            borderRadius: p.isCircle ? '50%' : '0',
-          }}
-        />
-      ))}
-    </div>
-  )
-}
+import { playTurnSound, playVictorySound, playMatchSound } from '../../utils/sounds'
+import Confetti from '../Confetti'
 
 export default function RankedChoice({ game, gameId, currentPlayer }) {
   const [ranking, setRanking] = useState([])
@@ -229,10 +202,26 @@ export default function RankedChoice({ game, gameId, currentPlayer }) {
   
   // Check for perfect matches
   const hasPerfectMatch = roundResults?.perfectMatches?.length >= 2
-  
+
+  // Play sounds on phase changes
+  useEffect(() => {
+    if (hasPerfectMatch) {
+      playVictorySound()
+    } else if (showResults && roundResults?.comparisons?.some(c => c.matchPercent >= 80)) {
+      playMatchSound()
+    }
+  }, [showResults, hasPerfectMatch, roundResults])
+
+  // Play sound when new round starts
+  useEffect(() => {
+    if (!hasSubmitted && prompt) {
+      playTurnSound()
+    }
+  }, [currentRound, hasSubmitted, prompt])
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      {hasPerfectMatch && <Confetti />}
+      <Confetti show={hasPerfectMatch} />
       
       <div className="w-full max-w-md">
         {/* Header */}

@@ -1,34 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { submitMindMeldAnswer, advanceMindMeldRound } from '../../services/gameService'
-import { normalizeAnswer, answersMatch, calculateRoundMatches } from '../../utils/mindMeldPrompts'
-
-// Confetti component for perfect melds
-function Confetti() {
-  const pieces = Array.from({ length: 20 }).map((_, i) => ({
-    id: i,
-    left: `${Math.random() * 100}%`,
-    delay: `${Math.random() * 0.5}s`,
-    color: ['#f97316', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#eab308'][Math.floor(Math.random() * 6)],
-  }))
-  
-  return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden">
-      {pieces.map(p => (
-        <div
-          key={p.id}
-          className="absolute w-3 h-3 animated-confetti"
-          style={{
-            left: p.left,
-            top: '-10px',
-            backgroundColor: p.color,
-            animationDelay: p.delay,
-            borderRadius: Math.random() > 0.5 ? '50%' : '0',
-          }}
-        />
-      ))}
-    </div>
-  )
-}
+import { calculateRoundMatches } from '../../utils/mindMeldPrompts'
+import { playTurnSound, playVictorySound, playMatchSound } from '../../utils/sounds'
+import Confetti from '../Confetti'
 
 export default function MindMeld({ game, gameId, currentPlayer }) {
   const [answer, setAnswer] = useState('')
@@ -134,10 +108,26 @@ export default function MindMeld({ game, gameId, currentPlayer }) {
     return scores
   }, [game?.rounds, currentRound, players])
   
+  // Play sounds on phase changes
+  useEffect(() => {
+    if (showResults && roundScores?.perfectMeld) {
+      playVictorySound()
+    } else if (showResults && roundScores?.matches?.length > 0) {
+      playMatchSound()
+    }
+  }, [showResults, roundScores])
+
+  // Play sound when it's time to answer
+  useEffect(() => {
+    if (!hasAnswered && prompt) {
+      playTurnSound()
+    }
+  }, [currentRound, hasAnswered, prompt])
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       {/* Perfect Meld Confetti */}
-      {showResults && roundScores?.perfectMeld && <Confetti />}
+      <Confetti show={showResults && roundScores?.perfectMeld} />
       
       {/* Header */}
       <div className="text-center mb-4">

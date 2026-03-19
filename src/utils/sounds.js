@@ -111,3 +111,108 @@ export function showNotification(title, body) {
     })
   }
 }
+
+// Play victory fanfare for wins/matches
+export function playVictorySound() {
+  try {
+    const ctx = getAudioContext()
+    const frequencies = [523.25, 659.25, 783.99, 1046.5] // C5, E5, G5, C6
+    
+    frequencies.forEach((freq, i) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      
+      const startTime = ctx.currentTime + i * 0.1
+      osc.frequency.setValueAtTime(freq, startTime)
+      gain.gain.setValueAtTime(0.2, startTime)
+      gain.gain.exponentialRampToValueAtTime(0.01, startTime + 0.2)
+      
+      osc.start(startTime)
+      osc.stop(startTime + 0.2)
+    })
+    
+    if (navigator.vibrate) {
+      navigator.vibrate([50, 30, 50, 30, 100])
+    }
+  } catch (e) {
+    console.log('Sound not available:', e)
+  }
+}
+
+// Play match/correct sound
+export function playMatchSound() {
+  try {
+    const ctx = getAudioContext()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    
+    osc.frequency.setValueAtTime(880, ctx.currentTime)
+    osc.frequency.setValueAtTime(1174.66, ctx.currentTime + 0.08) // D6
+    
+    gain.gain.setValueAtTime(0.25, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15)
+    
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.15)
+    
+    if (navigator.vibrate) {
+      navigator.vibrate(30)
+    }
+  } catch (e) {
+    console.log('Sound not available:', e)
+  }
+}
+
+// Play error/wrong sound
+export function playErrorSound() {
+  try {
+    const ctx = getAudioContext()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    
+    osc.type = 'sawtooth'
+    osc.frequency.setValueAtTime(200, ctx.currentTime)
+    osc.frequency.setValueAtTime(150, ctx.currentTime + 0.15)
+    
+    gain.gain.setValueAtTime(0.15, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2)
+    
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.2)
+    
+    if (navigator.vibrate) {
+      navigator.vibrate([100, 50, 100])
+    }
+  } catch (e) {
+    console.log('Sound not available:', e)
+  }
+}
+
+// Play countdown tick
+export function playTickSound() {
+  try {
+    const ctx = getAudioContext()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    
+    osc.frequency.setValueAtTime(440, ctx.currentTime)
+    gain.gain.setValueAtTime(0.1, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05)
+    
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.05)
+  } catch (e) {
+    console.log('Sound not available:', e)
+  }
+}

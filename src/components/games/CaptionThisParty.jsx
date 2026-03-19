@@ -1,34 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { submitCaptionParty, submitCaptionVoteParty, advanceCaptionRound } from '../../services/gameService'
-
-// Pre-generate confetti pieces
-const CONFETTI_PIECES = Array.from({ length: 25 }).map((_, i) => ({
-  id: i,
-  left: `${(i * 4) % 100}%`,
-  delay: `${(i * 0.04) % 1}s`,
-  color: ['#f97316', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#eab308'][i % 6],
-  borderRadius: i % 2 === 0 ? '50%' : '0',
-}))
-
-function Confetti() {
-  return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden">
-      {CONFETTI_PIECES.map(p => (
-        <div
-          key={p.id}
-          className="absolute w-3 h-3 animated-confetti"
-          style={{
-            left: p.left,
-            top: '-10px',
-            backgroundColor: p.color,
-            animationDelay: p.delay,
-            borderRadius: p.borderRadius,
-          }}
-        />
-      ))}
-    </div>
-  )
-}
+import { playTurnSound, playVictorySound, playTickSound } from '../../utils/sounds'
+import Confetti from '../Confetti'
 
 export default function CaptionThisParty({ game, gameId, currentPlayer }) {
   const [caption, setCaption] = useState('')
@@ -256,11 +229,34 @@ export default function CaptionThisParty({ game, gameId, currentPlayer }) {
   }, [game?.rounds, players])
   
   const cumulativeScores = getCumulativeScores()
+
+  // Play sounds on phase changes
+  const isWinner = showResults && roundResults?.winner === currentPlayer?.id
   
+  useEffect(() => {
+    if (isWinner) {
+      playVictorySound()
+    }
+  }, [isWinner])
+
+  // Play sound when voting starts  
+  useEffect(() => {
+    if (phase === 'voting' && !hasVoted) {
+      playTurnSound()
+    }
+  }, [phase, hasVoted])
+
+  // Play tick sound at 5 seconds
+  useEffect(() => {
+    if (timeLeft === 5 && phase === 'captioning' && !hasSubmittedCaption) {
+      playTickSound()
+    }
+  }, [timeLeft, phase, hasSubmittedCaption])
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       {/* Winner confetti */}
-      {showResults && roundResults?.winner === currentPlayer?.id && <Confetti />}
+      <Confetti show={isWinner} />
       
       {/* Header */}
       <div className="text-center mb-4">

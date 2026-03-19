@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { submitMostLikelyVote, advanceMostLikelyRound } from '../../services/gameService'
+import { playTurnSound, playVictorySound } from '../../utils/sounds'
+import Confetti from '../Confetti'
 
 // Crown animation for winner reveal
 function CrownReveal() {
@@ -119,9 +121,29 @@ export default function MostLikely({ game, gameId, currentPlayer }) {
     
     return scores
   }, [game?.rounds, currentRound, players])
+
+  // Check if current player won this round
+  const iWon = showResults && roundWinner?.winners?.includes(currentPlayer?.id)
+
+  // Play sounds
+  useEffect(() => {
+    if (iWon) {
+      playVictorySound()
+    }
+  }, [iWon])
+
+  // Play sound when voting starts
+  useEffect(() => {
+    if (!hasVoted && prompt) {
+      playTurnSound()
+    }
+  }, [currentRound, hasVoted, prompt])
   
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
+      {/* Winner confetti */}
+      <Confetti show={iWon} />
+      
       {/* Header */}
       <div className="text-center mb-4">
         <h1 className="text-2xl font-bold mb-1 flex items-center justify-center gap-2">

@@ -1,41 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { submitPrediction, submitPredictionAnswer, advancePredictionRound } from '../../services/gameService'
+import { playTurnSound, playVictorySound, playMatchSound } from '../../utils/sounds'
+import Confetti from '../Confetti'
 
 // Crystal ball animation for reveals
 function CrystalBall({ correct }) {
   return (
     <div className={`text-6xl transition-all duration-500 ${correct ? 'scale-125' : 'grayscale opacity-50'}`}>
       {correct ? '🔮' : '💨'}
-    </div>
-  )
-}
-
-// Pre-generate confetti pieces outside component to avoid impure render
-const CONFETTI_PIECES = Array.from({ length: 20 }).map((_, i) => ({
-  id: i,
-  left: `${(i * 5) % 100}%`,
-  delay: `${(i * 0.025) % 0.5}s`,
-  color: ['#f97316', '#22c55e', '#3b82f6', '#a855f7', '#ec4899', '#eab308'][i % 6],
-  borderRadius: i % 2 === 0 ? '50%' : '0',
-}))
-
-// Confetti for perfect prediction (everyone got it right)
-function Confetti() {
-  return (
-    <div className="fixed inset-0 pointer-events-none overflow-hidden">
-      {CONFETTI_PIECES.map(p => (
-        <div
-          key={p.id}
-          className="absolute w-3 h-3 animated-confetti"
-          style={{
-            left: p.left,
-            top: '-10px',
-            backgroundColor: p.color,
-            animationDelay: p.delay,
-            borderRadius: p.borderRadius,
-          }}
-        />
-      ))}
     </div>
   )
 }
@@ -203,11 +175,28 @@ export default function Prediction({ game, gameId, currentPlayer }) {
   }, [game?.rounds, players])
   
   const cumulativeScores = getCumulativeScores()
-  
+
+  // Play sounds on phase changes
+  useEffect(() => {
+    if (showResults && roundResults?.perfectPrediction) {
+      playVictorySound()
+    } else if (showResults && roundResults?.correctPlayers?.length > 0) {
+      playMatchSound()
+    }
+  }, [showResults, roundResults])
+
+  // Play sound when it's your turn to answer
+  useEffect(() => {
+    const phase = roundData?.phase || 'predicting'
+    if (phase === 'answering' && isInHotSeat) {
+      playTurnSound()
+    }
+  }, [roundData?.phase, isInHotSeat])
+
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4">
       {/* Perfect prediction confetti */}
-      {showResults && roundResults?.perfectPrediction && <Confetti />}
+      <Confetti show={showResults && roundResults?.perfectPrediction} />
       
       {/* Header */}
       <div className="text-center mb-4">
