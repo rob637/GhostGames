@@ -1,26 +1,35 @@
+import { useState } from 'react'
 import { usePremium } from '../contexts/PremiumContext'
+import { showToast } from './Toast'
 
 /**
  * UpgradeModal - Shows when user tries to access premium content
  * 
  * Clean, simple modal with clear value prop and single CTA.
- * Stripe integration will replace the test unlock button.
+ * Redirects to Stripe Checkout for payment.
  */
 export default function UpgradeModal() {
-  const { showUpgrade, setShowUpgrade, price, unlock, isPremium } = usePremium()
+  const { showUpgrade, setShowUpgrade, price, startCheckout, isPremium } = usePremium()
+  const [isLoading, setIsLoading] = useState(false)
 
   if (!showUpgrade || isPremium) return null
 
   const handlePurchase = async () => {
-    // TODO: Replace with Stripe checkout
-    // For now, just unlock for testing
-    unlock()
+    setIsLoading(true)
+    try {
+      await startCheckout()
+      // Will redirect to Stripe, so no need to reset loading
+    } catch (error) {
+      console.error('Checkout error:', error)
+      showToast('Failed to start checkout. Please try again.', 'error')
+      setIsLoading(false)
+    }
   }
 
   return (
     <div 
       className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4 animate-fade-in"
-      onClick={() => setShowUpgrade(false)}
+      onClick={() => !isLoading && setShowUpgrade(false)}
     >
       <div 
         className="card max-w-sm w-full text-center animate-slide-up"
@@ -56,23 +65,25 @@ export default function UpgradeModal() {
 
         {/* Price + CTA */}
         <button 
-          className="btn-primary w-full text-lg py-4 mb-3"
+          className="btn-primary w-full text-lg py-4 mb-3 disabled:opacity-50"
           onClick={handlePurchase}
+          disabled={isLoading}
         >
-          Unlock for {price}
+          {isLoading ? 'Loading...' : `Unlock for ${price}`}
         </button>
 
         {/* Cancel */}
         <button 
-          className="text-secondary text-sm hover:text-primary transition-colors"
+          className="text-secondary text-sm hover:text-primary transition-colors disabled:opacity-50"
           onClick={() => setShowUpgrade(false)}
+          disabled={isLoading}
         >
           Maybe later
         </button>
 
         {/* Fine print */}
         <p className="text-xs text-secondary mt-4 opacity-70">
-          One-time purchase. No subscription.
+          One-time purchase. No subscription. Secure payment via Stripe.
         </p>
       </div>
     </div>
