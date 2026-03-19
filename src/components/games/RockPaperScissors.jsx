@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { submitRPSChoice } from '../../services/gameService'
 import QuitButton from '../QuitButton'
 import PlayAgainButton from '../PlayAgainButton'
@@ -45,7 +45,7 @@ export default function RockPaperScissors({ game, gameId, player }) {
   }
   
   // Reset selected choice when round changes
-  useMemo(() => {
+  useEffect(() => {
     setSelectedChoice(null)
   }, [currentRound])
   

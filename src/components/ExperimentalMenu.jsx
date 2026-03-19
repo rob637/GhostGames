@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useExperimental } from '../contexts/ExperimentalContext'
+import Confetti from './Confetti'
 
 /**
  * ExperimentalMenu - Secret settings panel for experimental features
@@ -33,21 +34,7 @@ export default function ExperimentalMenu({ isOpen, onClose }) {
       {/* Menu */}
       <div className="relative bg-[var(--bg-secondary)] rounded-2xl max-w-md w-full p-6 animate-slide-up shadow-2xl border border-white/10">
         {/* Confetti effect */}
-        {showConfetti && (
-          <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-2xl">
-            {[...Array(20)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute w-2 h-2 rounded-full animate-confetti"
-                style={{
-                  left: `${Math.random() * 100}%`,
-                  backgroundColor: ['#ff6b6b', '#4ecdc4', '#ffe66d', '#95e1d3', '#f38181'][i % 5],
-                  animationDelay: `${Math.random() * 0.5}s`,
-                }}
-              />
-            ))}
-          </div>
-        )}
+        <Confetti show={showConfetti} />
 
         {/* Header */}
         <div className="text-center mb-6">
