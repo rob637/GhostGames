@@ -19,6 +19,7 @@ import { getRandomBluffQuestions } from '../utils/bluffQuestions'
 import { getRandomPredictionQuestions } from '../utils/predictionQuestions'
 import { getRandomScenes } from '../utils/captionScenes'
 import { getRandomWordPrompts } from '../utils/wordAssociationPrompts'
+import { getRandomRankingPrompts } from '../utils/rankingPrompts'
 
 // Generate a short game ID
 function generateGameId() {
@@ -668,6 +669,11 @@ export async function createPartyGame(gameType) {
     gameData.currentRound = 0
     gameData.rounds = []
     gameData.totalRounds = 8
+  } else if (gameType === 'ranked-choice') {
+    gameData.prompts = getRandomRankingPrompts(6)
+    gameData.currentRound = 0
+    gameData.rounds = []
+    gameData.totalRounds = 6
   }
   
   await setDoc(doc(db, 'games', gameId), gameData)
@@ -1443,6 +1449,138 @@ export async function advanceWordAssociationRound(gameId, roundIndex) {
   if (!game) throw new Error('Game not found')
   
   const totalRounds = game.totalRounds || 8
+  const nextRound = roundIndex + 1
+  
+  const updateData = {
+    updatedAt: serverTimestamp(),
+  }
+  
+  if (nextRound >= totalRounds) {
+    updateData.status = 'finished'
+  } else {
+    updateData.currentRound = nextRound
+  }
+  
+  await updateDoc(gameRef, updateData)
+}
+
+// Ranked Choice: Submit a player's ranking
+export async function submitRanking(gameId, roundIndex, ranking) {
+  const gameRef = doc(db, 'games', gameId)
+  const gameSnap = await getDoc(gameRef)
+  const game = gameSnap.data()
+  const playerId = getOrCreatePlayerId()
+  
+  if (!game) throw new Error('Game not found')
+  
+  const rounds = [...(game.rounds || [])]
+  
+  // Ensure rounds array is long enough
+  while (rounds.length <= roundIndex) {
+    rounds.push({ rankings: {} })
+  }
+  
+  // Add this player's ranking
+  rounds[roundIndex] = {
+    ...rounds[roundIndex],
+    rankings: {
+      ...(rounds[roundIndex].rankings || {}),
+      [playerId]: {
+        ranking, // Array of options in ranked order
+        submittedAt: Date.now(),
+      }
+    }
+  }
+  
+  const updateData = {
+    rounds,
+    updatedAt: serverTimestamp(),
+  }
+  
+  // Check if all players have submitted
+  const playerCount = game.partyPlayers?.length || 0
+  const rankingCount = Object.keys(rounds[roundIndex].rankings).length
+  
+  if (rankingCount >= playerCount) {
+    // Calculate consensus and scores
+    const rankings = rounds[roundIndex].rankings
+    
+    // Calculate consensus ranking (average position for each option)
+    const positionSums = {}
+    const options = Object.values(rankings)[0].ranking
+    
+    options.forEach(opt => {
+      positionSums[opt] = 0
+    })
+    
+    Object.values(rankings).forEach(data => {
+      data.ranking.forEach((opt, idx) => {
+        positionSums[opt] += idx
+      })
+    })
+    
+    // Sort by average position to get consensus
+    const consensus = [...options].sort((a, b) => positionSums[a] - positionSums[b])
+    
+    // Calculate match percentages and scores
+    const roundScores = {}
+    const matchPercentages = {}
+    
+    const playerIds = Object.keys(rankings)
+    
+    playerIds.forEach(pid => {
+      const playerRanking = rankings[pid].ranking
+      const matches = {}
+      let totalMatchPercent = 0
+      
+      // Compare with each other player
+      playerIds.forEach(otherPid => {
+        if (pid === otherPid) return
+        
+        const otherRanking = rankings[otherPid].ranking
+        let matchScore = 0
+        const maxScore = playerRanking.length
+        
+        // Calculate match score based on position differences
+        playerRanking.forEach((opt, idx) => {
+          const otherIdx = otherRanking.indexOf(opt)
+          const diff = Math.abs(idx - otherIdx)
+          // Score: 1 point for same position, 0.5 for 1 off, 0.25 for 2 off, etc.
+          matchScore += 1 / (1 + diff)
+        })
+        
+        const matchPercent = Math.round((matchScore / maxScore) * 100)
+        matches[otherPid] = matchPercent
+        totalMatchPercent += matchPercent
+      })
+      
+      matchPercentages[pid] = matches
+      
+      // Score based on average match percentage  
+      const avgMatch = playerIds.length > 1 ? totalMatchPercent / (playerIds.length - 1) : 100
+      roundScores[pid] = Math.round(avgMatch * 2) // 0-200 points per round
+    })
+    
+    rounds[roundIndex].complete = true
+    rounds[roundIndex].completedAt = Date.now()
+    rounds[roundIndex].roundScores = roundScores
+    rounds[roundIndex].matchPercentages = matchPercentages
+    rounds[roundIndex].consensus = consensus
+    updateData.rounds = rounds
+  }
+  
+  await updateDoc(gameRef, updateData)
+}
+
+// Ranked Choice: Advance to next round
+export async function advanceRankingRound(gameId, roundIndex) {
+  const gameRef = doc(db, 'games', gameId)
+  const gameSnap = await getDoc(gameRef)
+  const game = gameSnap.data()
+  
+  if (!game) throw new Error('Game not found')
+  
+  const totalRounds = game.totalRounds || 6
   const nextRound = roundIndex + 1
   
   const updateData = {

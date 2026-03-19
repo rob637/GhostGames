@@ -15,6 +15,8 @@ import CaptionThisParty from '../components/games/CaptionThisParty'
 import CaptionThisPartyResults from '../components/games/CaptionThisPartyResults'
 import WordAssociation from '../components/games/WordAssociation'
 import WordAssociationResults from '../components/games/WordAssociationResults'
+import RankedChoice from '../components/games/RankedChoice'
+import RankedChoiceResults from '../components/games/RankedChoiceResults'
 import Loading from '../components/Loading'
 
 export default function PartyGame() {
@@ -167,6 +169,15 @@ export default function PartyGame() {
         />
       )
     }
+    if (game.gameType === 'ranked-choice') {
+      return (
+        <RankedChoice 
+          game={game} 
+          gameId={gameId} 
+          currentPlayer={currentPlayer}
+        />
+      )
+    }
   }
   
   // Finished game - show results
@@ -219,6 +230,15 @@ export default function PartyGame() {
     if (game.gameType === 'word-association') {
       return (
         <WordAssociationResults 
+          game={game} 
+          gameId={gameId} 
+          currentPlayer={currentPlayer}
+        />
+      )
+    }
+    if (game.gameType === 'ranked-choice') {
+      return (
+        <RankedChoiceResults 
           game={game} 
           gameId={gameId} 
           currentPlayer={currentPlayer}
