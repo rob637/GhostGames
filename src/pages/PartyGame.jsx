@@ -13,6 +13,8 @@ import Prediction from '../components/games/Prediction'
 import PredictionResults from '../components/games/PredictionResults'
 import CaptionThisParty from '../components/games/CaptionThisParty'
 import CaptionThisPartyResults from '../components/games/CaptionThisPartyResults'
+import WordAssociation from '../components/games/WordAssociation'
+import WordAssociationResults from '../components/games/WordAssociationResults'
 import Loading from '../components/Loading'
 
 export default function PartyGame() {
@@ -156,6 +158,15 @@ export default function PartyGame() {
         />
       )
     }
+    if (game.gameType === 'word-association') {
+      return (
+        <WordAssociation 
+          game={game} 
+          gameId={gameId} 
+          currentPlayer={currentPlayer}
+        />
+      )
+    }
   }
   
   // Finished game - show results
@@ -199,6 +210,15 @@ export default function PartyGame() {
     if (game.gameType === 'caption-this') {
       return (
         <CaptionThisPartyResults 
+          game={game} 
+          gameId={gameId} 
+          currentPlayer={currentPlayer}
+        />
+      )
+    }
+    if (game.gameType === 'word-association') {
+      return (
+        <WordAssociationResults 
           game={game} 
           gameId={gameId} 
           currentPlayer={currentPlayer}

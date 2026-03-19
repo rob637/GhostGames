@@ -18,6 +18,7 @@ import { getRandomMostLikelyPrompts } from '../utils/mostLikelyPrompts'
 import { getRandomBluffQuestions } from '../utils/bluffQuestions'
 import { getRandomPredictionQuestions } from '../utils/predictionQuestions'
 import { getRandomScenes } from '../utils/captionScenes'
+import { getRandomWordPrompts } from '../utils/wordAssociationPrompts'
 
 // Generate a short game ID
 function generateGameId() {
@@ -662,6 +663,11 @@ export async function createPartyGame(gameType) {
     gameData.currentRound = 0
     gameData.rounds = []
     gameData.totalRounds = 6
+  } else if (gameType === 'word-association') {
+    gameData.prompts = getRandomWordPrompts(8)
+    gameData.currentRound = 0
+    gameData.rounds = []
+    gameData.totalRounds = 8
   }
   
   await setDoc(doc(db, 'games', gameId), gameData)
@@ -1314,6 +1320,129 @@ export async function advanceCaptionRound(gameId, roundIndex) {
   if (!game) throw new Error('Game not found')
   
   const totalRounds = game.totalRounds || 6
+  const nextRound = roundIndex + 1
+  
+  const updateData = {
+    updatedAt: serverTimestamp(),
+  }
+  
+  if (nextRound >= totalRounds) {
+    updateData.status = 'finished'
+  } else {
+    updateData.currentRound = nextRound
+  }
+  
+  await updateDoc(gameRef, updateData)
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WORD ASSOCIATION PARTY GAME
+// ═══════════════════════════════════════════════════════════════
+
+// Word Association: Submit an answer
+export async function submitWordAssociation(gameId, roundIndex, answer) {
+  const gameRef = doc(db, 'games', gameId)
+  const gameSnap = await getDoc(gameRef)
+  const game = gameSnap.data()
+  const playerId = getOrCreatePlayerId()
+  
+  if (!game) throw new Error('Game not found')
+  
+  const rounds = [...(game.rounds || [])]
+  
+  // Ensure rounds array is long enough
+  while (rounds.length <= roundIndex) {
+    rounds.push({ answers: {} })
+  }
+  
+  // Add this player's answer
+  rounds[roundIndex] = {
+    ...rounds[roundIndex],
+    answers: {
+      ...(rounds[roundIndex].answers || {}),
+      [playerId]: {
+        answer: answer.trim(),
+        submittedAt: Date.now(),
+      }
+    }
+  }
+  
+  const updateData = {
+    rounds,
+    updatedAt: serverTimestamp(),
+  }
+  
+  // Check if all players have answered
+  const playerCount = game.partyPlayers?.length || 0
+  const answerCount = Object.keys(rounds[roundIndex].answers).length
+  
+  if (answerCount >= playerCount) {
+    // Calculate match groups and scores
+    const answers = rounds[roundIndex].answers
+    const normalized = {}
+    const matchGroups = {}
+    
+    // Normalize all answers
+    Object.entries(answers).forEach(([pid, data]) => {
+      const norm = data.answer.toLowerCase().trim().replace(/[^a-z0-9]/g, '')
+      normalized[pid] = norm
+      
+      if (!matchGroups[norm]) {
+        matchGroups[norm] = []
+      }
+      matchGroups[norm].push(pid)
+    })
+    
+    // Calculate scores
+    const roundScores = {}
+    
+    Object.entries(normalized).forEach(([pid, norm]) => {
+      const group = matchGroups[norm]
+      
+      if (group.length > 1) {
+        // Matched with others - 100 points per match
+        roundScores[pid] = (group.length - 1) * 100
+      } else {
+        // Unique answer - 50 points for creativity
+        roundScores[pid] = 50
+      }
+    })
+    
+    // Find largest match group for bonus
+    let largestGroup = []
+    Object.values(matchGroups).forEach(group => {
+      if (group.length > largestGroup.length) {
+        largestGroup = group
+      }
+    })
+    
+    // Bonus for being in the largest group (if 3+)
+    if (largestGroup.length >= 3) {
+      largestGroup.forEach(pid => {
+        roundScores[pid] += 50 // "Mind meld" bonus
+      })
+    }
+    
+    rounds[roundIndex].complete = true
+    rounds[roundIndex].completedAt = Date.now()
+    rounds[roundIndex].roundScores = roundScores
+    rounds[roundIndex].matchGroups = matchGroups
+    rounds[roundIndex].perfectMatch = largestGroup.length === playerCount
+    updateData.rounds = rounds
+  }
+  
+  await updateDoc(gameRef, updateData)
+}
+
+// Word Association: Advance to next round
+export async function advanceWordAssociationRound(gameId, roundIndex) {
+  const gameRef = doc(db, 'games', gameId)
+  const gameSnap = await getDoc(gameRef)
+  const game = gameSnap.data()
+  
+  if (!game) throw new Error('Game not found')
+  
+  const totalRounds = game.totalRounds || 8
   const nextRound = roundIndex + 1
   
   const updateData = {
