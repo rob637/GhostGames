@@ -1,36 +1,21 @@
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createGame, createPartyGame } from '../services/gameService'
 import { ALL_GAMES } from '../config/games'
-import { useExperimental, useSecretPattern } from '../contexts/ExperimentalContext'
 import { usePremium } from '../contexts/PremiumContext'
 import GamePicker from '../components/GamePicker'
 import ThemePicker from '../components/ThemePicker'
-import ExperimentalMenu from '../components/ExperimentalMenu'
 
 export default function Home() {
   const navigate = useNavigate()
   const [isCreating, setIsCreating] = useState(false)
   const [selectedGame, setSelectedGame] = useState(null)
-  const [showSecretMenu, setShowSecretMenu] = useState(false)
   
-  const { isExperimental } = useExperimental()
   const { isPremium, setShowUpgrade } = usePremium()
 
-  // Secret pattern: click "O" in Ghost 5 times
-  const handleSecretActivated = useCallback(() => {
-    setShowSecretMenu(true)
-    if (!isExperimental) {
-      // Play a subtle sound or haptic feedback here
-    }
-  }, [isExperimental])
-
-  const { handleClick: handleSecretClick } = useSecretPattern(5, handleSecretActivated)
-
-  // Get all available games based on experimental mode
+  // Get all available games
   const allGames = Object.values(ALL_GAMES).filter(game => {
     if (game.status === 'hidden') return false
-    if (game.status === 'experimental' && !isExperimental) return false
     if (game.status === 'coming-soon') return true // Show but disabled
     return true
   })
@@ -125,36 +110,17 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-6">
-      {/* Header with secret click target */}
+      {/* Header */}
       <div className="text-center mb-12 animate-slide-up">
         <h1 className="text-5xl font-bold mb-4">
           <span className="mr-3">👻</span>
-          <span>Gh</span>
-          <span 
-            onClick={handleSecretClick}
-            className="cursor-default select-none"
-            style={{ userSelect: 'none' }}
-          >
-            o
-          </span>
-          <span>st Games</span>
+          Ghost Games
         </h1>
         <p className="text-[var(--text-muted)] text-lg max-w-md mx-auto">
           Quick games with friends. No app needed.
           <br />
           <span className="text-[var(--ghost)]">If they ghost, AI finishes.</span>
         </p>
-        
-        {/* Experimental mode indicator */}
-        {isExperimental && (
-          <div 
-            className="inline-flex items-center gap-2 mt-4 px-3 py-1 rounded-full bg-[var(--ghost)]/20 text-[var(--ghost)] text-sm cursor-pointer hover:bg-[var(--ghost)]/30 transition-colors"
-            onClick={() => setShowSecretMenu(true)}
-          >
-            <span>🔬</span>
-            <span>Experimental Mode</span>
-          </div>
-        )}
       </div>
 
       <GamePicker
@@ -166,12 +132,6 @@ export default function Home() {
       <p className="mt-12 text-sm text-[var(--text-muted)]">
         Share a link. Play in browser. 2 minutes max.
       </p>
-
-      {/* Secret Menu */}
-      <ExperimentalMenu 
-        isOpen={showSecretMenu} 
-        onClose={() => setShowSecretMenu(false)} 
-      />
     </div>
   )
 }

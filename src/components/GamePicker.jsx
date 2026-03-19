@@ -1,17 +1,14 @@
 import { useState } from 'react'
 import { PLAYER_CATEGORIES } from '../config/games'
-import { useExperimental } from '../contexts/ExperimentalContext'
 import { usePremium } from '../contexts/PremiumContext'
 
 /**
  * GamePicker - Tabbed game selection with categories
  * 
  * Shows Solo / 2-Player / Party tabs with games in each.
- * Experimental games only show when experimental mode is enabled.
  * Premium games show lock icon and trigger upgrade modal.
  */
 export default function GamePicker({ games, onSelect, disabled }) {
-  const { isExperimental } = useExperimental()
   const { isPremium } = usePremium()
   const [activeTab, setActiveTab] = useState('duo')
 
@@ -76,13 +73,8 @@ export default function GamePicker({ games, onSelect, disabled }) {
       <div className="grid gap-4">
         {currentGames.length === 0 ? (
           <div className="text-center py-8 text-[var(--text-muted)]">
-            <p className="text-4xl mb-2">🔬</p>
+            <p className="text-4xl mb-2">�</p>
             <p>No games available yet.</p>
-            {!isExperimental && (
-              <p className="text-sm mt-2">
-                Enable experimental mode to see upcoming games!
-              </p>
-            )}
           </div>
         ) : (
           currentGames.map((game, index) => (
@@ -92,7 +84,6 @@ export default function GamePicker({ games, onSelect, disabled }) {
               index={index}
               onSelect={onSelect}
               disabled={disabled}
-              isExperimental={isExperimental}
               userIsPremium={isPremium}
             />
           ))
@@ -105,9 +96,8 @@ export default function GamePicker({ games, onSelect, disabled }) {
 /**
  * Individual game card
  */
-function GameCard({ game, index, onSelect, disabled, isExperimental, userIsPremium }) {
+function GameCard({ game, index, onSelect, disabled, userIsPremium }) {
   const isComingSoon = game.status === 'coming-soon'
-  const isExperimentalGame = game.status === 'experimental'
   const isLocked = game.premium && !userIsPremium
   const isDisabled = disabled || isComingSoon
 
@@ -141,11 +131,6 @@ function GameCard({ game, index, onSelect, disabled, isExperimental, userIsPremi
             {isComingSoon && (
               <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-[var(--text-muted)]">
                 Soon
-              </span>
-            )}
-            {isExperimentalGame && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--ghost)]/20 text-[var(--ghost)]">
-                New
               </span>
             )}
           </div>
