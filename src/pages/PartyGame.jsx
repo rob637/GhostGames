@@ -11,6 +11,8 @@ import BluffBattle from '../components/games/BluffBattle'
 import BluffBattleResults from '../components/games/BluffBattleResults'
 import Prediction from '../components/games/Prediction'
 import PredictionResults from '../components/games/PredictionResults'
+import CaptionThisParty from '../components/games/CaptionThisParty'
+import CaptionThisPartyResults from '../components/games/CaptionThisPartyResults'
 import Loading from '../components/Loading'
 
 export default function PartyGame() {
@@ -145,6 +147,15 @@ export default function PartyGame() {
         />
       )
     }
+    if (game.gameType === 'caption-this') {
+      return (
+        <CaptionThisParty 
+          game={game} 
+          gameId={gameId} 
+          currentPlayer={currentPlayer}
+        />
+      )
+    }
   }
   
   // Finished game - show results
@@ -179,6 +190,15 @@ export default function PartyGame() {
     if (game.gameType === 'prediction') {
       return (
         <PredictionResults 
+          game={game} 
+          gameId={gameId} 
+          currentPlayer={currentPlayer}
+        />
+      )
+    }
+    if (game.gameType === 'caption-this') {
+      return (
+        <CaptionThisPartyResults 
           game={game} 
           gameId={gameId} 
           currentPlayer={currentPlayer}

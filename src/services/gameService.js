@@ -17,6 +17,7 @@ import { getRandomMindMeldPrompts } from '../utils/mindMeldPrompts'
 import { getRandomMostLikelyPrompts } from '../utils/mostLikelyPrompts'
 import { getRandomBluffQuestions } from '../utils/bluffQuestions'
 import { getRandomPredictionQuestions } from '../utils/predictionQuestions'
+import { getRandomScenes } from '../utils/captionScenes'
 
 // Generate a short game ID
 function generateGameId() {
@@ -656,6 +657,11 @@ export async function createPartyGame(gameType) {
     gameData.currentRound = 0
     gameData.rounds = []
     gameData.totalRounds = 10
+  } else if (gameType === 'caption-this') {
+    gameData.scenes = getRandomScenes(6)
+    gameData.currentRound = 0
+    gameData.rounds = []
+    gameData.totalRounds = 6
   }
   
   await setDoc(doc(db, 'games', gameId), gameData)
@@ -1147,6 +1153,167 @@ export async function advancePredictionRound(gameId, roundIndex) {
   if (!game) throw new Error('Game not found')
   
   const totalRounds = game.totalRounds || 10
+  const nextRound = roundIndex + 1
+  
+  const updateData = {
+    updatedAt: serverTimestamp(),
+  }
+  
+  if (nextRound >= totalRounds) {
+    updateData.status = 'finished'
+  } else {
+    updateData.currentRound = nextRound
+  }
+  
+  await updateDoc(gameRef, updateData)
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CAPTION THIS PARTY GAME
+// ═══════════════════════════════════════════════════════════════
+
+// Caption This: Submit a caption for the current scene
+export async function submitCaptionParty(gameId, roundIndex, caption) {
+  const gameRef = doc(db, 'games', gameId)
+  const gameSnap = await getDoc(gameRef)
+  const game = gameSnap.data()
+  const playerId = getOrCreatePlayerId()
+  
+  if (!game) throw new Error('Game not found')
+  
+  const rounds = [...(game.rounds || [])]
+  
+  // Ensure rounds array is long enough
+  while (rounds.length <= roundIndex) {
+    rounds.push({ captions: {}, votes: {} })
+  }
+  
+  // Add this player's caption
+  rounds[roundIndex] = {
+    ...rounds[roundIndex],
+    captions: {
+      ...(rounds[roundIndex].captions || {}),
+      [playerId]: {
+        caption: caption.trim(),
+        submittedAt: Date.now(),
+      }
+    }
+  }
+  
+  const updateData = {
+    rounds,
+    updatedAt: serverTimestamp(),
+  }
+  
+  // Check if all players have submitted captions
+  const playerCount = game.partyPlayers?.length || 0
+  const captionCount = Object.keys(rounds[roundIndex].captions).length
+  
+  if (captionCount >= playerCount) {
+    rounds[roundIndex].captionsComplete = true
+    updateData.rounds = rounds
+  }
+  
+  await updateDoc(gameRef, updateData)
+}
+
+// Caption This: Submit a vote for favorite caption
+export async function submitCaptionVoteParty(gameId, roundIndex, votedForPlayerId) {
+  const gameRef = doc(db, 'games', gameId)
+  const gameSnap = await getDoc(gameRef)
+  const game = gameSnap.data()
+  const playerId = getOrCreatePlayerId()
+  
+  if (!game) throw new Error('Game not found')
+  
+  // Can't vote for yourself
+  if (votedForPlayerId === playerId) {
+    throw new Error("Can't vote for your own caption")
+  }
+  
+  const rounds = [...(game.rounds || [])]
+  
+  // Add this player's vote
+  rounds[roundIndex] = {
+    ...rounds[roundIndex],
+    votes: {
+      ...(rounds[roundIndex].votes || {}),
+      [playerId]: {
+        votedFor: votedForPlayerId,
+        submittedAt: Date.now(),
+      }
+    }
+  }
+  
+  const updateData = {
+    rounds,
+    updatedAt: serverTimestamp(),
+  }
+  
+  // Check if all players have voted
+  const playerCount = game.partyPlayers?.length || 0
+  const voteCount = Object.keys(rounds[roundIndex].votes).length
+  
+  if (voteCount >= playerCount) {
+    rounds[roundIndex].votesComplete = true
+    rounds[roundIndex].completedAt = Date.now()
+    
+    // Calculate scores for this round
+    const votes = rounds[roundIndex].votes || {}
+    const roundScores = {}
+    const votesCounts = {}
+    
+    // Initialize scores and vote counts
+    game.partyPlayers.forEach(p => {
+      roundScores[p.id] = 0
+      votesCounts[p.id] = 0
+    })
+    
+    // Count votes and score
+    Object.entries(votes).forEach(([voterId, voteData]) => {
+      const votedFor = voteData.votedFor
+      if (votedFor && votedFor !== voterId) {
+        votesCounts[votedFor] = (votesCounts[votedFor] || 0) + 1
+        roundScores[votedFor] = (roundScores[votedFor] || 0) + 100 // +100 per vote
+      }
+    })
+    
+    // Find winner(s) and give bonus
+    const maxVotes = Math.max(...Object.values(votesCounts))
+    const roundWinners = []
+    if (maxVotes > 0) {
+      Object.entries(votesCounts).forEach(([pId, count]) => {
+        if (count === maxVotes) {
+          roundWinners.push(pId)
+        }
+      })
+      
+      // Bonus for winning (+200, split if tied)
+      const bonusPerWinner = Math.floor(200 / roundWinners.length)
+      roundWinners.forEach(winnerId => {
+        roundScores[winnerId] += bonusPerWinner
+      })
+    }
+    
+    rounds[roundIndex].roundScores = roundScores
+    rounds[roundIndex].voteCounts = votesCounts
+    rounds[roundIndex].roundWinners = roundWinners
+    rounds[roundIndex].complete = true
+    updateData.rounds = rounds
+  }
+  
+  await updateDoc(gameRef, updateData)
+}
+
+// Caption This: Advance to next round
+export async function advanceCaptionRound(gameId, roundIndex) {
+  const gameRef = doc(db, 'games', gameId)
+  const gameSnap = await getDoc(gameRef)
+  const game = gameSnap.data()
+  
+  if (!game) throw new Error('Game not found')
+  
+  const totalRounds = game.totalRounds || 6
   const nextRound = roundIndex + 1
   
   const updateData = {
