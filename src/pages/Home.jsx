@@ -1,8 +1,9 @@
 import { useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { createGame, createPartyGame } from '../services/gameService'
-import { getGamesGroupedByCategory, ALL_GAMES } from '../config/games'
+import { ALL_GAMES } from '../config/games'
 import { useExperimental, useSecretPattern } from '../contexts/ExperimentalContext'
+import { usePremium } from '../contexts/PremiumContext'
 import GamePicker from '../components/GamePicker'
 import ThemePicker from '../components/ThemePicker'
 import ExperimentalMenu from '../components/ExperimentalMenu'
@@ -13,7 +14,8 @@ export default function Home() {
   const [selectedGame, setSelectedGame] = useState(null)
   const [showSecretMenu, setShowSecretMenu] = useState(false)
   
-  const { isExperimental, enableExperimental } = useExperimental()
+  const { isExperimental } = useExperimental()
+  const { isPremium, setShowUpgrade } = usePremium()
 
   // Secret pattern: click "O" in Ghost 5 times
   const handleSecretActivated = useCallback(() => {
@@ -35,6 +37,12 @@ export default function Home() {
 
   const handleSelectGame = (gameType) => {
     const game = ALL_GAMES[gameType]
+    
+    // Check if premium game and user isn't premium
+    if (game?.premium && !isPremium) {
+      setShowUpgrade(true)
+      return
+    }
     
     // Solo games navigate directly - no Firestore game needed
     if (game?.category === 'solo') {

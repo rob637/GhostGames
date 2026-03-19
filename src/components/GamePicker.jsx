@@ -1,15 +1,18 @@
 import { useState } from 'react'
 import { PLAYER_CATEGORIES } from '../config/games'
 import { useExperimental } from '../contexts/ExperimentalContext'
+import { usePremium } from '../contexts/PremiumContext'
 
 /**
  * GamePicker - Tabbed game selection with categories
  * 
  * Shows Solo / 2-Player / Party tabs with games in each.
  * Experimental games only show when experimental mode is enabled.
+ * Premium games show lock icon and trigger upgrade modal.
  */
 export default function GamePicker({ games, onSelect, disabled }) {
   const { isExperimental } = useExperimental()
+  const { isPremium } = usePremium()
   const [activeTab, setActiveTab] = useState('duo')
 
   // Group games by category
@@ -90,6 +93,7 @@ export default function GamePicker({ games, onSelect, disabled }) {
               onSelect={onSelect}
               disabled={disabled}
               isExperimental={isExperimental}
+              userIsPremium={isPremium}
             />
           ))
         )}
@@ -101,9 +105,10 @@ export default function GamePicker({ games, onSelect, disabled }) {
 /**
  * Individual game card
  */
-function GameCard({ game, index, onSelect, disabled, isExperimental }) {
+function GameCard({ game, index, onSelect, disabled, isExperimental, userIsPremium }) {
   const isComingSoon = game.status === 'coming-soon'
   const isExperimentalGame = game.status === 'experimental'
+  const isLocked = game.premium && !userIsPremium
   const isDisabled = disabled || isComingSoon
 
   return (
@@ -120,10 +125,15 @@ function GameCard({ game, index, onSelect, disabled, isExperimental }) {
     >
       <div className="flex items-center gap-4">
         <div 
-          className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl"
+          className="w-14 h-14 rounded-xl flex items-center justify-center text-2xl relative"
           style={{ backgroundColor: `${game.color}20` }}
         >
           {game.emoji}
+          {isLocked && (
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[var(--surface)] flex items-center justify-center text-xs">
+              🔒
+            </div>
+          )}
         </div>
         <div className="flex-1">
           <div className="flex items-center gap-2 flex-wrap">
@@ -138,17 +148,12 @@ function GameCard({ game, index, onSelect, disabled, isExperimental }) {
                 New
               </span>
             )}
-            {game.premium && (
-              <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--warning)]/20 text-[var(--warning)]">
-                Premium
-              </span>
-            )}
           </div>
           <p className="text-sm text-[var(--text-muted)]">{game.description}</p>
         </div>
         {!isDisabled && (
           <div className="text-[var(--text-muted)]">
-            →
+            {isLocked ? '🔒' : '→'}
           </div>
         )}
       </div>
