@@ -16,6 +16,7 @@ import { getRandomTriviaQuestions } from '../utils/triviaQuestions'
 import { getRandomMindMeldPrompts } from '../utils/mindMeldPrompts'
 import { getRandomMostLikelyPrompts } from '../utils/mostLikelyPrompts'
 import { getRandomBluffQuestions } from '../utils/bluffQuestions'
+import { getRandomPredictionQuestions } from '../utils/predictionQuestions'
 
 // Generate a short game ID
 function generateGameId() {
@@ -650,6 +651,11 @@ export async function createPartyGame(gameType) {
     gameData.currentRound = 0
     gameData.rounds = []
     gameData.totalRounds = 8
+  } else if (gameType === 'prediction') {
+    gameData.prompts = getRandomPredictionQuestions(10)
+    gameData.currentRound = 0
+    gameData.rounds = []
+    gameData.totalRounds = 10
   }
   
   await setDoc(doc(db, 'games', gameId), gameData)
@@ -997,6 +1003,150 @@ export async function advanceBluffRound(gameId, roundIndex) {
   if (!game) throw new Error('Game not found')
   
   const totalRounds = game.totalRounds || 8
+  const nextRound = roundIndex + 1
+  
+  const updateData = {
+    updatedAt: serverTimestamp(),
+  }
+  
+  if (nextRound >= totalRounds) {
+    updateData.status = 'finished'
+  } else {
+    updateData.currentRound = nextRound
+  }
+  
+  await updateDoc(gameRef, updateData)
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PREDICTION GAME
+// ═══════════════════════════════════════════════════════════════
+
+// Prediction: Submit a prediction (non-hot-seat players)
+export async function submitPrediction(gameId, roundIndex, prediction) {
+  const gameRef = doc(db, 'games', gameId)
+  const gameSnap = await getDoc(gameRef)
+  const game = gameSnap.data()
+  const playerId = getOrCreatePlayerId()
+  
+  if (!game) throw new Error('Game not found')
+  
+  const rounds = [...(game.rounds || [])]
+  
+  // Ensure rounds array is long enough
+  while (rounds.length <= roundIndex) {
+    rounds.push({ predictions: {} })
+  }
+  
+  // Add this player's prediction
+  rounds[roundIndex] = {
+    ...rounds[roundIndex],
+    predictions: {
+      ...(rounds[roundIndex].predictions || {}),
+      [playerId]: {
+        prediction,
+        submittedAt: Date.now(),
+      }
+    }
+  }
+  
+  const updateData = {
+    rounds,
+    updatedAt: serverTimestamp(),
+  }
+  
+  // Check if all non-hot-seat players have predicted
+  const players = game.partyPlayers || []
+  const predictorCount = players.length - 1 // Exclude hot seat
+  const predictionCount = Object.keys(rounds[roundIndex].predictions).length
+  
+  if (predictionCount >= predictorCount) {
+    rounds[roundIndex].predictionsComplete = true
+    updateData.rounds = rounds
+  }
+  
+  await updateDoc(gameRef, updateData)
+}
+
+// Prediction: Hot seat player submits their answer
+export async function submitPredictionAnswer(gameId, roundIndex, answer) {
+  const gameRef = doc(db, 'games', gameId)
+  const gameSnap = await getDoc(gameRef)
+  const game = gameSnap.data()
+  const playerId = getOrCreatePlayerId()
+  
+  if (!game) throw new Error('Game not found')
+  
+  // Verify this player is in the hot seat
+  const players = game.partyPlayers || []
+  const hotSeatIndex = roundIndex % players.length
+  const hotSeatPlayerId = players[hotSeatIndex]?.id
+  
+  if (playerId !== hotSeatPlayerId) {
+    throw new Error('Only the hot seat player can answer')
+  }
+  
+  const rounds = [...(game.rounds || [])]
+  
+  // Add the answer
+  rounds[roundIndex] = {
+    ...rounds[roundIndex],
+    answer,
+    answeredAt: Date.now(),
+    complete: true,
+    completedAt: Date.now(),
+  }
+  
+  // Calculate scores for this round
+  const predictions = rounds[roundIndex].predictions || {}
+  const roundScores = {}
+  const correctPredictors = []
+  const wrongPredictors = []
+  
+  // Initialize all scores
+  players.forEach(p => { roundScores[p.id] = 0 })
+  
+  // Score predictions
+  Object.entries(predictions).forEach(([predictorId, data]) => {
+    if (data.prediction === answer) {
+      roundScores[predictorId] = 100 // Correct prediction
+      correctPredictors.push(predictorId)
+    } else {
+      wrongPredictors.push(predictorId)
+    }
+  })
+  
+  // Hot seat gets 50 points per person fooled
+  roundScores[hotSeatPlayerId] = wrongPredictors.length * 50
+  
+  // Perfect prediction bonus
+  const predictorCount = players.length - 1
+  if (correctPredictors.length === predictorCount && predictorCount > 1) {
+    correctPredictors.forEach(pId => {
+      roundScores[pId] += 50 // Bonus for unanimous prediction
+    })
+    rounds[roundIndex].perfectPrediction = true
+  }
+  
+  rounds[roundIndex].roundScores = roundScores
+  rounds[roundIndex].correctPredictors = correctPredictors
+  rounds[roundIndex].wrongPredictors = wrongPredictors
+  
+  await updateDoc(gameRef, {
+    rounds,
+    updatedAt: serverTimestamp(),
+  })
+}
+
+// Prediction: Advance to next round
+export async function advancePredictionRound(gameId, roundIndex) {
+  const gameRef = doc(db, 'games', gameId)
+  const gameSnap = await getDoc(gameRef)
+  const game = gameSnap.data()
+  
+  if (!game) throw new Error('Game not found')
+  
+  const totalRounds = game.totalRounds || 10
   const nextRound = roundIndex + 1
   
   const updateData = {

@@ -9,6 +9,8 @@ import MostLikely from '../components/games/MostLikely'
 import MostLikelyResults from '../components/games/MostLikelyResults'
 import BluffBattle from '../components/games/BluffBattle'
 import BluffBattleResults from '../components/games/BluffBattleResults'
+import Prediction from '../components/games/Prediction'
+import PredictionResults from '../components/games/PredictionResults'
 import Loading from '../components/Loading'
 
 export default function PartyGame() {
@@ -134,6 +136,15 @@ export default function PartyGame() {
         />
       )
     }
+    if (game.gameType === 'prediction') {
+      return (
+        <Prediction 
+          game={game} 
+          gameId={gameId} 
+          currentPlayer={currentPlayer}
+        />
+      )
+    }
   }
   
   // Finished game - show results
@@ -159,6 +170,15 @@ export default function PartyGame() {
     if (game.gameType === 'bluff-battle') {
       return (
         <BluffBattleResults 
+          game={game} 
+          gameId={gameId} 
+          currentPlayer={currentPlayer}
+        />
+      )
+    }
+    if (game.gameType === 'prediction') {
+      return (
+        <PredictionResults 
           game={game} 
           gameId={gameId} 
           currentPlayer={currentPlayer}
