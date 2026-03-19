@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { submitPrediction, submitPredictionAnswer, advancePredictionRound } from '../../services/gameService'
 import { playTurnSound, playVictorySound, playMatchSound } from '../../utils/sounds'
+import { showToast } from '../Toast'
 import Confetti from '../Confetti'
 
 // Crystal ball animation for reveals
@@ -123,6 +124,7 @@ export default function Prediction({ game, gameId, currentPlayer }) {
       await submitPrediction(gameId, currentRound, selectedOption)
     } catch (err) {
       console.error('Failed to predict:', err)
+      showToast('Failed to submit prediction. Please try again.')
     }
     setIsSubmitting(false)
   }
@@ -135,6 +137,7 @@ export default function Prediction({ game, gameId, currentPlayer }) {
       await submitPredictionAnswer(gameId, currentRound, selectedOption)
     } catch (err) {
       console.error('Failed to answer:', err)
+      showToast('Failed to submit answer. Please try again.')
     }
     setIsSubmitting(false)
   }
@@ -147,6 +150,7 @@ export default function Prediction({ game, gameId, currentPlayer }) {
       await advancePredictionRound(gameId, currentRound)
     } catch (err) {
       console.error('Failed to advance:', err)
+      showToast('Failed to continue. Please try again.')
       setIsAdvancing(false)
     }
   }

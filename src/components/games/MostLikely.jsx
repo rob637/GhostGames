@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { submitMostLikelyVote, advanceMostLikelyRound } from '../../services/gameService'
 import { playTurnSound, playVictorySound } from '../../utils/sounds'
+import { showToast } from '../Toast'
 import Confetti from '../Confetti'
 
 // Crown animation for winner reveal
@@ -81,6 +82,7 @@ export default function MostLikely({ game, gameId, currentPlayer }) {
       await submitMostLikelyVote(gameId, currentRound, selectedPlayer)
     } catch (err) {
       console.error('Failed to submit:', err)
+      showToast('Failed to vote. Please try again.')
     }
     setIsSubmitting(false)
   }
@@ -93,6 +95,7 @@ export default function MostLikely({ game, gameId, currentPlayer }) {
       await advanceMostLikelyRound(gameId, currentRound, roundWinner)
     } catch (err) {
       console.error('Failed to advance:', err)
+      showToast('Failed to continue. Please try again.')
       setIsAdvancing(false)
     }
   }
@@ -203,7 +206,7 @@ export default function MostLikely({ game, gameId, currentPlayer }) {
                 {/* All Vote Breakdown */}
                 <div className="border-t border-[var(--border)] pt-4 mt-4">
                   <div className="text-sm text-[var(--text-muted)] mb-3">Vote breakdown</div>
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {Object.entries(roundWinner.voteCounts)
                       .sort((a, b) => b[1] - a[1])
                       .map(([playerId, votes]) => {
@@ -316,7 +319,7 @@ export default function MostLikely({ game, gameId, currentPlayer }) {
           </div>
           
           {/* Player Selection Grid */}
-          <div className="grid grid-cols-2 gap-3 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
             {players.map(player => (
               <button
                 key={player.id}

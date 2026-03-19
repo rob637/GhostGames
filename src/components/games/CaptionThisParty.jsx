@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { submitCaptionParty, submitCaptionVoteParty, advanceCaptionRound } from '../../services/gameService'
 import { playTurnSound, playVictorySound, playTickSound } from '../../utils/sounds'
+import { showToast } from '../Toast'
 import Confetti from '../Confetti'
 
 export default function CaptionThisParty({ game, gameId, currentPlayer }) {
@@ -42,6 +43,7 @@ export default function CaptionThisParty({ game, gameId, currentPlayer }) {
       await submitCaptionParty(gameId, currentRound, text)
     } catch (err) {
       console.error('Failed to submit:', err)
+      showToast('Failed to submit caption. Please try again.')
     }
     setIsSubmitting(false)
   }, [gameId, currentRound, isSubmitting, hasSubmittedCaption])
@@ -171,6 +173,7 @@ export default function CaptionThisParty({ game, gameId, currentPlayer }) {
       await submitCaptionVoteParty(gameId, currentRound, selectedCaption)
     } catch (err) {
       console.error('Failed to vote:', err)
+      showToast('Failed to vote. Please try again.')
     }
     setIsSubmitting(false)
   }
@@ -183,6 +186,7 @@ export default function CaptionThisParty({ game, gameId, currentPlayer }) {
       await advanceCaptionRound(gameId, currentRound)
     } catch (err) {
       console.error('Failed to advance:', err)
+      showToast('Failed to continue. Please try again.')
       setIsAdvancing(false)
     }
   }

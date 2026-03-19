@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { submitMindMeldAnswer, advanceMindMeldRound } from '../../services/gameService'
 import { calculateRoundMatches } from '../../utils/mindMeldPrompts'
 import { playTurnSound, playVictorySound, playMatchSound } from '../../utils/sounds'
+import { showToast } from '../Toast'
 import Confetti from '../Confetti'
 
 export default function MindMeld({ game, gameId, currentPlayer }) {
@@ -62,6 +63,7 @@ export default function MindMeld({ game, gameId, currentPlayer }) {
       await submitMindMeldAnswer(gameId, currentRound, answer)
     } catch (err) {
       console.error('Failed to submit:', err)
+      showToast('Failed to submit answer. Please try again.')
     }
     setIsSubmitting(false)
   }
@@ -74,6 +76,7 @@ export default function MindMeld({ game, gameId, currentPlayer }) {
       await advanceMindMeldRound(gameId, currentRound)
     } catch (err) {
       console.error('Failed to advance:', err)
+      showToast('Failed to continue. Please try again.')
       setIsAdvancing(false)
     }
   }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { submitRanking, advanceRankingRound } from '../../services/gameService'
 import { playTurnSound, playVictorySound, playMatchSound } from '../../utils/sounds'
+import { showToast } from '../Toast'
 import Confetti from '../Confetti'
 
 export default function RankedChoice({ game, gameId, currentPlayer }) {
@@ -153,6 +154,7 @@ export default function RankedChoice({ game, gameId, currentPlayer }) {
       await submitRanking(gameId, currentRound, ranking)
     } catch (err) {
       console.error('Failed to submit:', err)
+      showToast('Failed to submit ranking. Please try again.')
     }
     setIsSubmitting(false)
   }
@@ -165,6 +167,7 @@ export default function RankedChoice({ game, gameId, currentPlayer }) {
       await advanceRankingRound(gameId, currentRound)
     } catch (err) {
       console.error('Failed to advance:', err)
+      showToast('Failed to continue. Please try again.')
       setIsAdvancing(false)
     }
   }

@@ -138,7 +138,7 @@ export default function RankedChoiceResults({ game, currentPlayer }) {
             <h3 className="text-sm font-semibold text-[var(--text-muted)] mb-3">
               Awards
             </h3>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {awards.mindReader && (
                 <div className="bg-[var(--surface)] p-3 rounded-lg text-center">
                   <div className="text-2xl mb-1">🎯</div>

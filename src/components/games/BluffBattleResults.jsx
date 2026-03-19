@@ -163,7 +163,7 @@ export default function BluffBattleResults({ game, currentPlayer }) {
         {/* Game Stats */}
         <div className="card mb-6 animate-fade-in" style={{ animationDelay: '500ms' }}>
           <h3 className="font-semibold mb-4 text-center">Game Stats</h3>
-          <div className="grid grid-cols-2 gap-4 text-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
             <div className="bg-[var(--bg-tertiary)] rounded-xl p-4">
               <div className="text-2xl mb-1">❓</div>
               <div className="text-lg font-bold">{game?.totalRounds || 8}</div>

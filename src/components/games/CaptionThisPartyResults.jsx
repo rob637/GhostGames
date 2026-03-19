@@ -106,7 +106,7 @@ export default function CaptionThisPartyResults({ game, currentPlayer }) {
         </div>
         
         {/* Awards */}
-        <div className="grid grid-cols-2 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
           <div className="card bg-pink-500/10 border-pink-500/30 text-center p-3">
             <div className="text-2xl mb-1">🎯</div>
             <div className="text-xs text-[var(--text-muted)]">Most Votes</div>

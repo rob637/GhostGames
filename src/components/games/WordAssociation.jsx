@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { submitWordAssociation, advanceWordAssociationRound } from '../../services/gameService'
 import { calculateWordMatches } from '../../utils/wordAssociationPrompts'
 import { playTurnSound, playVictorySound, playMatchSound, playTickSound } from '../../utils/sounds'
+import { showToast } from '../Toast'
 import Confetti from '../Confetti'
 
 export default function WordAssociation({ game, gameId, currentPlayer }) {
@@ -34,6 +35,7 @@ export default function WordAssociation({ game, gameId, currentPlayer }) {
       await submitWordAssociation(gameId, currentRound, text)
     } catch (err) {
       console.error('Failed to submit:', err)
+      showToast('Failed to submit answer. Please try again.')
     }
     setIsSubmitting(false)
   }, [gameId, currentRound, isSubmitting, hasAnswered])
@@ -104,6 +106,7 @@ export default function WordAssociation({ game, gameId, currentPlayer }) {
       await advanceWordAssociationRound(gameId, currentRound)
     } catch (err) {
       console.error('Failed to advance:', err)
+      showToast('Failed to continue. Please try again.')
       setIsAdvancing(false)
     }
   }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { submitBluffAnswer, submitBluffVote, advanceBluffRound } from '../../services/gameService'
 import { playTurnSound, playVictorySound, playMatchSound } from '../../utils/sounds'
+import { showToast } from '../Toast'
 import Confetti from '../Confetti'
 
 export default function BluffBattle({ game, gameId, currentPlayer }) {
@@ -51,6 +52,7 @@ export default function BluffBattle({ game, gameId, currentPlayer }) {
       await submitBluffAnswer(gameId, currentRound, fakeAnswer.trim())
     } catch (err) {
       console.error('Failed to submit:', err)
+      showToast('Failed to submit answer. Please try again.')
     }
     setIsSubmitting(false)
   }
@@ -63,6 +65,7 @@ export default function BluffBattle({ game, gameId, currentPlayer }) {
       await submitBluffVote(gameId, currentRound, selectedAnswer)
     } catch (err) {
       console.error('Failed to vote:', err)
+      showToast('Failed to vote. Please try again.')
     }
     setIsSubmitting(false)
   }
@@ -75,6 +78,7 @@ export default function BluffBattle({ game, gameId, currentPlayer }) {
       await advanceBluffRound(gameId, currentRound)
     } catch (err) {
       console.error('Failed to advance:', err)
+      showToast('Failed to continue. Please try again.')
       setIsAdvancing(false)
     }
   }
@@ -397,7 +401,7 @@ export default function BluffBattle({ game, gameId, currentPlayer }) {
             {/* Round Scores */}
             <div className="border-t border-[var(--border)] pt-4 mb-4">
               <div className="text-sm text-[var(--text-muted)] mb-3 text-center">Round Points</div>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {Object.entries(results.scores)
                   .sort((a, b) => b[1] - a[1])
                   .map(([playerId, score]) => {
