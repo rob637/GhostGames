@@ -1,0 +1,28 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0f1a"/>
+      <stop offset="50%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#6366f1"/>
+      <stop offset="100%" style="stop-color:#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <!-- Decorative circles -->
+  <circle cx="100" cy="100" r="200" fill="#6366f1" opacity="0.1"/>
+  <circle cx="1100" cy="530" r="250" fill="#8b5cf6" opacity="0.1"/>
+  <!-- Ghost emoji -->
+  <text x="600" y="220" font-family="Arial, sans-serif" font-size="140" text-anchor="middle">👻</text>
+  <!-- Title -->
+  <text x="600" y="350" font-family="Arial, sans-serif" font-size="72" fill="white" text-anchor="middle" font-weight="bold">Ghost Games</text>
+  <!-- Subtitle -->
+  <text x="600" y="420" font-family="Arial, sans-serif" font-size="28" fill="#a0aec0" text-anchor="middle">Fun 2-player games to play with friends!</text>
+  <!-- Game icons row -->
+  <text x="600" y="520" font-family="Arial, sans-serif" font-size="40" text-anchor="middle">✊  ✏️  🔥  📖  🧠</text>
+  <!-- Bottom accent line -->
+  <rect x="400" y="570" width="400" height="4" rx="2" fill="url(#accent)"/>
+</svg>

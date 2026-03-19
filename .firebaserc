@@ -1,0 +1,19 @@
+{
+  "projects": {
+    "default": "ghost-games-4206b",
+    "dev": "ghost-games-4206b",
+    "prod": "ghostgames2"
+  },
+  "targets": {
+    "ghost-games-4206b": {
+      "hosting": {
+        "dev": ["ghost-games-4206b"]
+      }
+    },
+    "ghostgames2": {
+      "hosting": {
+        "prod": ["ghostgames2"]
+      }
+    }
+  }
+}
